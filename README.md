@@ -13,19 +13,19 @@ Implemented:
 - Telegram Android fork builds as `app.tark.client`.
 - App name, launcher icon, splash mark, package name, and basic About text are replaced for Tark.
 - Telegram API credentials are read from `local.properties` through `TARK_API_ID` and `TARK_API_HASH`.
+- AI workflow backend URL is read from `TARK_WORKFLOW_API_BASE_URL`; empty value keeps the built-in mock flow.
 - `AI Workbench` is available from the main navigation and Settings.
 - Chat message long-press menu has `Create AI Task`.
 - `Create AI Task` passes `chat_id`, `message_id`, and message text into AI Workbench.
-- A mock `POST /api/tasks/draft` creates a draft requirement card.
+- `POST /api/tasks/draft` creates a draft requirement card through the configured Go backend, with mock fallback.
 - Ops review buttons support `Approve` and `Reject`.
-- Approve simulates `POST /api/tasks/{id}/approve` and returns a mock GitHub Issue URL.
+- Approve calls `POST /api/tasks/{id}/approve` through the configured Go backend, with mock fallback.
 - `Network / Proxy` has a reserve page and status model, but no traffic routing.
 
 Not implemented yet:
 
-- Real backend service.
 - Real AI request summarization API.
-- Real GitHub App issue creation.
+- Production GitHub App issue creation.
 - Real organization, department, role, and permission model.
 - Real VPN tunnel, proxy routing, node management, or Android `VpnService` integration.
 
@@ -50,11 +50,11 @@ Default nodes should be supplied later by the user or organization. Tark should 
 
 ## Workflow Engine Plan
 
-The client currently uses an in-app mock workflow API so the product loop can be tested without a server.
+The client uses `TARK_WORKFLOW_API_BASE_URL` to call the Go workflow backend. If no backend URL is configured, it falls back to the in-app mock workflow API so the product loop can still be tested without a server.
 
-Recommended backend direction:
+Selected backend direction:
 
-- Java Spring Boot for API services.
+- Go for API services.
 - PostgreSQL for durable workflow and task state.
 - Redis for cache, locks, and async coordination.
 - Temporal for durable execution, retries, timers, async callbacks, and state recovery.
@@ -84,6 +84,13 @@ Create `local.properties`:
 sdk.dir=/path/to/android/sdk
 TARK_API_ID=your_api_id
 TARK_API_HASH=your_api_hash
+TARK_WORKFLOW_API_BASE_URL=
+```
+
+Leave `TARK_WORKFLOW_API_BASE_URL` empty for mock mode. For an Android emulator talking to a local Go backend on your Mac, use:
+
+```properties
+TARK_WORKFLOW_API_BASE_URL=http://10.0.2.2:8080
 ```
 
 Build:

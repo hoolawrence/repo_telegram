@@ -18,16 +18,25 @@ import android.widget.TextView;
 
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -189,7 +198,7 @@ public class AIWorkbenchActivity extends BaseFragment {
         }
         setButtonsEnabled(false);
         statusView.setText("POST /api/tasks/draft");
-        MockWorkflowApi.createDraft(sourceChatId, sourceMessageId, messageText, getRequester(), task -> {
+        WorkflowApi.createDraft(sourceChatId, sourceMessageId, messageText, getRequester(), task -> {
             currentTask = task;
             renderTask();
             setButtonsEnabled(true);
@@ -230,10 +239,11 @@ public class AIWorkbenchActivity extends BaseFragment {
         }
         setButtonsEnabled(false);
         statusView.setText("POST /api/tasks/" + currentTask.taskId + "/approve");
-        MockWorkflowApi.approve(currentTask, task -> {
+        WorkflowApi.approve(currentTask, task -> {
             currentTask = task;
             renderTask();
             statusView.setText(getString(R.string.AIWorkbenchApproved));
+            setButtonsEnabled(false);
         });
     }
 
@@ -241,11 +251,13 @@ public class AIWorkbenchActivity extends BaseFragment {
         if (currentTask == null) {
             return;
         }
-        currentTask.status = "rejected";
-        currentTask.updatedAt = MockWorkflowApi.now();
-        renderTask();
-        statusView.setText(getString(R.string.AIWorkbenchRejected));
         setButtonsEnabled(false);
+        statusView.setText("POST /api/tasks/" + currentTask.taskId + "/reject");
+        WorkflowApi.reject(currentTask, task -> {
+            currentTask = task;
+            renderTask();
+            statusView.setText(getString(R.string.AIWorkbenchRejected));
+        });
     }
 
     private void setButtonsEnabled(boolean enabled) {
@@ -260,6 +272,107 @@ public class AIWorkbenchActivity extends BaseFragment {
 
     private interface TaskCallback {
         void onResult(TaskCard task);
+    }
+
+    private static class WorkflowApi {
+        static void createDraft(long chatId, int messageId, String messageText, String requester, TaskCallback callback) {
+            String baseUrl = baseUrl();
+            if (TextUtils.isEmpty(baseUrl)) {
+                MockWorkflowApi.createDraft(chatId, messageId, messageText, requester, callback);
+                return;
+            }
+            Utilities.globalQueue.postRunnable(() -> {
+                try {
+                    JSONObject request = new JSONObject();
+                    request.put("requester", requester);
+                    request.put("source_chat_id", String.valueOf(chatId));
+                    request.put("source_message_id", String.valueOf(messageId));
+                    request.put("message_text", messageText == null ? "" : messageText);
+                    request.put("priority", "medium");
+                    TaskCard task = TaskCard.fromJson(post(baseUrl + "/api/tasks/draft", request));
+                    AndroidUtilities.runOnUIThread(() -> callback.onResult(task));
+                } catch (Exception e) {
+                    MockWorkflowApi.createDraft(chatId, messageId, messageText, requester, callback);
+                }
+            });
+        }
+
+        static void approve(TaskCard task, TaskCallback callback) {
+            postTaskAction(task, "approve", () -> MockWorkflowApi.approve(task, callback), callback);
+        }
+
+        static void reject(TaskCard task, TaskCallback callback) {
+            postTaskAction(task, "reject", () -> {
+                task.status = "rejected";
+                task.updatedAt = MockWorkflowApi.now();
+                AndroidUtilities.runOnUIThread(() -> callback.onResult(task));
+            }, callback);
+        }
+
+        private static void postTaskAction(TaskCard task, String action, Runnable fallback, TaskCallback callback) {
+            String baseUrl = baseUrl();
+            if (TextUtils.isEmpty(baseUrl) || TextUtils.isEmpty(task.taskId)) {
+                fallback.run();
+                return;
+            }
+            Utilities.globalQueue.postRunnable(() -> {
+                try {
+                    TaskCard result = TaskCard.fromJson(post(baseUrl + "/api/tasks/" + task.taskId + "/" + action, new JSONObject()));
+                    AndroidUtilities.runOnUIThread(() -> callback.onResult(result));
+                } catch (Exception e) {
+                    fallback.run();
+                }
+            });
+        }
+
+        private static String baseUrl() {
+            String baseUrl = BuildConfig.TARK_WORKFLOW_API_BASE_URL;
+            if (baseUrl == null) {
+                return "";
+            }
+            baseUrl = baseUrl.trim();
+            while (baseUrl.endsWith("/")) {
+                baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+            }
+            return baseUrl;
+        }
+
+        private static JSONObject post(String url, JSONObject body) throws Exception {
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setConnectTimeout(8000);
+            connection.setReadTimeout(12000);
+            connection.setRequestMethod("POST");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setDoOutput(true);
+            byte[] payload = body.toString().getBytes(StandardCharsets.UTF_8);
+            try (OutputStream outputStream = connection.getOutputStream()) {
+                outputStream.write(payload);
+            }
+
+            int code = connection.getResponseCode();
+            InputStream inputStream = code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream();
+            String response = readResponse(inputStream);
+            connection.disconnect();
+            if (code < 200 || code >= 300) {
+                throw new IllegalStateException(response);
+            }
+            return new JSONObject(response);
+        }
+
+        private static String readResponse(InputStream inputStream) throws Exception {
+            if (inputStream == null) {
+                return "";
+            }
+            StringBuilder builder = new StringBuilder();
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    builder.append(line);
+                }
+            }
+            return builder.toString();
+        }
     }
 
     private static class MockWorkflowApi {

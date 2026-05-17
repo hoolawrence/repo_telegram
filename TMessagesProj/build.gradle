@@ -113,6 +113,11 @@ android {
         }
         buildConfigField "int", "TARK_API_ID", tarkApiId
         buildConfigField "String", "TARK_API_HASH", "\"" + getProps("TARK_API_HASH") + "\""
+        def tarkWorkflowApiBaseUrl = getProps("TARK_WORKFLOW_API_BASE_URL")
+        if (tarkWorkflowApiBaseUrl == null) {
+            tarkWorkflowApiBaseUrl = ""
+        }
+        buildConfigField "String", "TARK_WORKFLOW_API_BASE_URL", "\"" + tarkWorkflowApiBaseUrl + "\""
 
         externalNativeBuild {
             cmake {

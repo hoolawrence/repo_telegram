@@ -26,22 +26,24 @@ Client surface:
 
 ## Workflow
 
-Current state: client-side mock.
+Current state: configurable Go backend with client-side mock fallback.
+
+The Android client reads `TARK_WORKFLOW_API_BASE_URL` from `local.properties`. If it is empty, AI Workbench uses the built-in mock flow. If it is set, AI Workbench calls the Go backend endpoints directly.
 
 Implemented demo flow:
 
 - Telegram message
 - Long press `Create AI Task`
 - Message context passed to AI Workbench
-- Mock `POST /api/tasks/draft`
+- `POST /api/tasks/draft`
 - Requirement card displayed
 - Ops `Approve` / `Reject`
-- Mock `POST /api/tasks/{id}/approve`
-- Mock GitHub Issue URL displayed
+- `POST /api/tasks/{id}/approve`
+- GitHub Issue URL displayed; dry-run mode is supported by the Go backend
 
-Recommended backend stack:
+Selected backend stack:
 
-- Spring Boot
+- Go
 - PostgreSQL
 - Redis
 - Temporal
