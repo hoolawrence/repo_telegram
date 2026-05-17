@@ -1,39 +1,103 @@
-## Telegram messenger for Android
+# Tark Telegram Workflow Client
 
-[Telegram](https://telegram.org) is a messaging app with a focus on speed and security. It’s superfast, simple and free.
-This repo contains the official source code for [Telegram App for Android](https://play.google.com/store/apps/details?id=org.telegram.messenger).
+Tark is an unofficial Android client forked from the official open source Telegram Android client. The product goal is not to rewrite Telegram, but to keep Telegram-compatible messaging while adding an internal AI workflow layer for task drafting, ops review, and GitHub handoff.
 
-## Creating your Telegram Application
+Source base: https://github.com/TelegramOrg/Telegram-Android
 
-We welcome all developers to use our API and source code to create applications on our platform.
-There are several things we require from **all developers** for the moment.
+## Current Phase
 
-1. [**Obtain your own api_id**](https://core.telegram.org/api/obtaining_api_id) for your application.
-2. Please **do not** use the name Telegram for your app — or make sure your users understand that it is unofficial.
-3. Kindly **do not** use our standard logo (white paper plane in a blue circle) as your app's logo.
-3. Please study our [**security guidelines**](https://core.telegram.org/mtproto/security_guidelines) and take good care of your users' data and privacy.
-4. Please remember to publish **your** code too in order to comply with the licences.
+This repository is in the Phase 1 demo stage.
 
-### API, Protocol documentation
+Implemented:
 
-Telegram API manuals: https://core.telegram.org/api
+- Telegram Android fork builds as `app.tark.client`.
+- App name, launcher icon, splash mark, package name, and basic About text are replaced for Tark.
+- Telegram API credentials are read from `local.properties` through `TARK_API_ID` and `TARK_API_HASH`.
+- `AI Workbench` is available from the main navigation and Settings.
+- Chat message long-press menu has `Create AI Task`.
+- `Create AI Task` passes `chat_id`, `message_id`, and message text into AI Workbench.
+- A mock `POST /api/tasks/draft` creates a draft requirement card.
+- Ops review buttons support `Approve` and `Reject`.
+- Approve simulates `POST /api/tasks/{id}/approve` and returns a mock GitHub Issue URL.
+- `Network / Proxy` has a reserve page and status model, but no traffic routing.
 
-MTproto protocol manuals: https://core.telegram.org/mtproto
+Not implemented yet:
 
-### Compilation Guide
+- Real backend service.
+- Real AI request summarization API.
+- Real GitHub App issue creation.
+- Real organization, department, role, and permission model.
+- Real VPN tunnel, proxy routing, node management, or Android `VpnService` integration.
 
-**Note**: In order to support [reproducible builds](https://core.telegram.org/reproducible-builds), this repo contains dummy release.keystore,  google-services.json and filled variables inside BuildVars.java. Before publishing your own APKs please make sure to replace all these files with your own.
+## VPN / Proxy Plan
 
-You will require Android Studio 3.4, Android NDK rev. 20 and Android SDK 8.1
+Phase 1 does not merge a VPN engine and does not include default nodes.
 
-1. Download the Telegram source code from https://github.com/DrKLO/Telegram ( git clone https://github.com/DrKLO/Telegram.git )
-2. Copy your release.keystore into TMessagesProj/config
-3. Fill out RELEASE_KEY_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_STORE_PASSWORD in gradle.properties to access your  release.keystore
-4.  Go to https://console.firebase.google.com/, create two android apps with application IDs org.telegram.messenger and org.telegram.messenger.beta, turn on firebase messaging and download google-services.json, which should be copied to the same folder as TMessagesProj.
-5. Open the project in the Studio (note that it should be opened, NOT imported).
-6. Fill out values in TMessagesProj/src/main/java/org/telegram/messenger/BuildVars.java – there’s a link for each of the variables showing where and which data to obtain.
-7. You are ready to compile Telegram.
+Candidate open source projects:
 
-### Localization
+- WireGuard Android: candidate for a real VPN tunnel engine.
+- Outline Client / Shadowsocks: candidate for proxy-style access profiles.
+- Android `VpnService`: Android integration point reserved for future traffic routing.
 
-We moved all translations to https://translations.telegram.org/en/android/. Please use it.
+Current behavior:
+
+- No default server nodes are bundled.
+- No credentials are bundled.
+- No traffic is routed through VPN or proxy.
+- The `Network / Proxy` page only shows reserved status fields.
+
+Default nodes should be supplied later by the user or organization. Tark should not ship public shared nodes in the open source client.
+
+## Workflow Engine Plan
+
+The client currently uses an in-app mock workflow API so the product loop can be tested without a server.
+
+Recommended backend direction:
+
+- Java Spring Boot for API services.
+- PostgreSQL for durable workflow and task state.
+- Redis for cache, locks, and async coordination.
+- Temporal for durable execution, retries, timers, async callbacks, and state recovery.
+- GitHub App for Issue and PR automation.
+- OpenAI or Codex APIs for requirement drafting and later code-generation workflows.
+
+Flowable is a reasonable alternative if the team wants BPMN-style visual process modeling. For the first server version, Temporal is the preferred fit because the workflow is asynchronous and needs reliable retries around AI calls, GitHub calls, PR callbacks, demo deployment, and ops acceptance.
+
+## Demo You Can Try
+
+1. Build the Android app.
+2. Log in with Telegram using your own Telegram API credentials.
+3. Open `AI Workbench` from the main navigation or Settings.
+4. Long press a normal chat message and choose `Create AI Task`.
+5. Review the generated draft card.
+6. Tap `Approve` to simulate GitHub Issue creation.
+7. Tap `Reject` to mark the card rejected.
+8. Open `Settings -> Network / Proxy` to see the Phase 1 VPN/Proxy reservation status.
+
+## Build
+
+Install Android SDK 35, Build Tools 35.0.0, NDK 21.4.7075529, and CMake 3.22.1.
+
+Create `local.properties`:
+
+```properties
+sdk.dir=/path/to/android/sdk
+TARK_API_ID=your_api_id
+TARK_API_HASH=your_api_hash
+```
+
+Build:
+
+```bash
+GRADLE_USER_HOME=.gradle-user ./gradlew :TMessagesProj_App:assembleDebug --no-daemon
+```
+
+The debug APK is generated at:
+
+```text
+TMessagesProj_App/build/outputs/apk/afat/debug/app.apk
+```
+
+## Important Branding Note
+
+Tark is not an official Telegram app. Do not use Telegram's official name, logo, production API credentials, Firebase configuration, or signing keys for a distributed Tark build.
