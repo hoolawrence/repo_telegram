@@ -1184,6 +1184,7 @@ public class ChatActivity extends BaseFragment implements
     public final static int OPTION_SUGGESTION_EDIT_TIME = 112;
     public final static int OPTION_SUGGESTION_EDIT_MESSAGE = 113;
     public final static int OPTION_SUGGESTION_ADD_OFFER = 114;
+    public final static int OPTION_CREATE_AI_TASK = 115;
 
     private final static int[] allowedNotificationsDuringChatListAnimations = new int[]{
             NotificationCenter.messagesRead,
@@ -32371,6 +32372,20 @@ public class ChatActivity extends BaseFragment implements
         MediaController.saveFile(path, getParentActivity(), messageObject.isVideo() ? 1 : 0, null, null);
     }
 
+    private void openAIWorkbenchForSelectedMessage() {
+        if (selectedObject == null) {
+            return;
+        }
+        CharSequence caption = getMessageCaption(selectedObject, selectedObjectGroup);
+        CharSequence content = getMessageContent(selectedObject, 0, false);
+        String text = caption != null ? caption.toString() : content != null ? content.toString() : "";
+        Bundle args = new Bundle();
+        args.putLong(AIWorkbenchActivity.ARG_SOURCE_CHAT_ID, selectedObject.getDialogId());
+        args.putInt(AIWorkbenchActivity.ARG_SOURCE_MESSAGE_ID, selectedObject.getId());
+        args.putString(AIWorkbenchActivity.ARG_MESSAGE_TEXT, text);
+        presentFragment(new AIWorkbenchActivity(args));
+    }
+
     private void processSelectedOption(int option) {
         if (selectedObject == null || getParentActivity() == null) {
             return;
@@ -33248,6 +33263,10 @@ public class ChatActivity extends BaseFragment implements
             case OPTION_FACT_CHECK: {
                 MessageObject msg = selectedObjectGroup != null ? selectedObjectGroup.findPrimaryMessageObject() : selectedObject;
                 FactCheckController.getInstance(currentAccount).openFactCheckEditor(getContext(), getResourceProvider(), msg, false);
+                break;
+            }
+            case OPTION_CREATE_AI_TASK: {
+                openAIWorkbenchForSelectedMessage();
                 break;
             }
             case OPTION_SUGGESTION_ADD_OFFER:
@@ -44248,6 +44267,7 @@ public class ChatActivity extends BaseFragment implements
         allowPin = allowPin && message.getId() > 0 && (message.messageOwner.action == null || message.messageOwner.action instanceof TLRPC.TL_messageActionEmpty) && !message.isExpiredStory() && message.type != MessageObject.TYPE_STORY_MENTION;
         boolean noforwards = isPeerNoForwards() || message.messageOwner.noforwards || getDialogId() == UserObject.VERIFY;
         boolean noforwardsOrPaidMedia = noforwards || message.type == MessageObject.TYPE_PAID_MEDIA;
+        boolean allowCreateAITask = selectedObject != null && selectedObject.getId() > 0 && !selectedObject.isSponsored() && !message.isExpiredStory() && selectedObject.contentType == 0;
         boolean allowUnpin = message.getDialogId() != mergeDialogId && allowPin && (pinnedMessageObjects.containsKey(message.getId()) || groupedMessages != null && !groupedMessages.messages.isEmpty() && pinnedMessageObjects.containsKey(groupedMessages.messages.get(0).getId())) && !message.isExpiredStory();
         boolean allowEdit = message.canEditMessage(currentChat) && !chatActivityEnterView.hasAudioToSend() && message.getDialogId() != mergeDialogId && message.type != MessageObject.TYPE_STORY && message.type != MessageObject.TYPE_POLL;
         if (allowEdit && groupedMessages != null) {
@@ -44806,6 +44826,11 @@ public class ChatActivity extends BaseFragment implements
                 options.add(OPTION_DELETE);
                 icons.add(deleteIconRes);
             }
+        }
+        if (allowCreateAITask && !options.contains(OPTION_CREATE_AI_TASK)) {
+            items.add(LocaleController.getString(R.string.CreateAITask));
+            options.add(OPTION_CREATE_AI_TASK);
+            icons.add(R.drawable.outline_ai_translate2);
         }
     }
 

@@ -1,7 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Telegram</string>
-    <string name="AppNameBeta">Telegram Beta</string>
+    <string name="AppName">Tark</string>
+    <string name="AppNameBeta">Tark Beta</string>
+    <string name="AIWorkbench">AI Workbench</string>
+    <string name="AIWorkbenchTab">AI</string>
+    <string name="AIWorkbenchCurrentUser">Current user</string>
+    <string name="AIWorkbenchNoMessage">Open a chat message menu and choose Create AI Task to generate a draft card.</string>
+    <string name="AIWorkbenchSource">Source</string>
+    <string name="AIWorkbenchDraftStatus">Draft from Mock API</string>
+    <string name="AIWorkbenchApprove">Approve</string>
+    <string name="AIWorkbenchReject">Reject</string>
+    <string name="AIWorkbenchApproved">Approved. Mock GitHub Issue created.</string>
+    <string name="AIWorkbenchRejected">Rejected by ops review.</string>
+    <string name="CreateAITask">Create AI Task</string>
+    <string name="TarkAbout">About Tark</string>
+    <string name="TarkAboutText">Tark is an unofficial Telegram Android fork for internal AI workflow collaboration. It keeps Telegram-compatible messaging and adds AI task drafting, ops review, and GitHub workflow handoff.</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -2568,7 +2581,7 @@
     <string name="DirectShareInfo">Show recent chats in Android share menu</string>
     <string name="Emoji">Emoji</string>
     <string name="LargeEmoji">Large Emoji</string>
-    <string name="TelegramVersion">Telegram for Android %1$s</string>
+    <string name="TelegramVersion">Tark for Android %1$s</string>
     <string name="DebugMenu">Debug Menu</string>
     <string name="DebugMenuLongPress">Long press again for debug menu</string>
     <string name="DebugSendLogs">Send Logs</string>

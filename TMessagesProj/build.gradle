@@ -107,6 +107,13 @@ android {
 
         multiDexEnabled true
 
+        def tarkApiId = getProps("TARK_API_ID")
+        if (tarkApiId == null || tarkApiId.length() == 0) {
+            tarkApiId = "0"
+        }
+        buildConfigField "int", "TARK_API_ID", tarkApiId
+        buildConfigField "String", "TARK_API_HASH", "\"" + getProps("TARK_API_HASH") + "\""
+
         externalNativeBuild {
             cmake {
                 version '3.10.2'
