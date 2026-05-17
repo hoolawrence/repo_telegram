@@ -18,6 +18,7 @@ Default nodes:
 
 Client surface:
 
+- Logged-out builds open `Tark Review`, which links to AI Workbench demo and Network / Proxy review.
 - Settings includes a `Network / Proxy` reserve page.
 - `TarkNetworkModule` exposes reserved status fields.
 - Connection state is `DISABLED`.
@@ -40,6 +41,11 @@ Implemented demo flow:
 - Ops `Approve` / `Reject`
 - `POST /api/tasks/{id}/approve`
 - GitHub Issue URL displayed; dry-run mode is supported by the Go backend
+
+Telegram login:
+
+- Real chat login requires `TARK_API_ID` and `TARK_API_HASH` from `my.telegram.org`.
+- APKs built with empty credentials keep the review flow available, but Telegram login is intentionally blocked with an explanatory message.
 
 Selected backend stack:
 

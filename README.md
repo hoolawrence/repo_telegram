@@ -14,6 +14,7 @@ Implemented:
 - App name, launcher icon, splash mark, package name, and basic About text are replaced for Tark.
 - Telegram API credentials are read from `local.properties` through `TARK_API_ID` and `TARK_API_HASH`.
 - AI workflow backend URL is read from `TARK_WORKFLOW_API_BASE_URL`; empty value keeps the built-in mock flow.
+- Logged-out builds open a Tark review screen so workflow and VPN/Proxy can be tested before Telegram login.
 - `AI Workbench` is available from the main navigation and Settings.
 - Chat message long-press menu has `Create AI Task`.
 - `Create AI Task` passes `chat_id`, `message_id`, and message text into AI Workbench.
@@ -65,14 +66,23 @@ Flowable is a reasonable alternative if the team wants BPMN-style visual process
 
 ## Demo You Can Try
 
-1. Build the Android app.
-2. Log in with Telegram using your own Telegram API credentials.
-3. Open `AI Workbench` from the main navigation or Settings.
-4. Long press a normal chat message and choose `Create AI Task`.
-5. Review the generated draft card.
-6. Tap `Approve` to simulate GitHub Issue creation.
-7. Tap `Reject` to mark the card rejected.
-8. Open `Settings -> Network / Proxy` to see the Phase 1 VPN/Proxy reservation status.
+Without Telegram API credentials:
+
+1. Build and install the APK.
+2. Open `Tark Review`.
+3. Tap `Open AI Workbench Demo`.
+4. Review the simulated requirement card.
+5. Tap `Approve` or `Reject`.
+6. Open `Network / Proxy` to see the Phase 1 VPN/Proxy reservation status.
+
+With Telegram API credentials:
+
+1. Set `TARK_API_ID` and `TARK_API_HASH` in `local.properties`.
+2. Rebuild and install the APK.
+3. Tap `Telegram Login` from `Tark Review`.
+4. Log in with Telegram.
+5. Long press a normal chat message and choose `Create AI Task`.
+6. Review and approve the generated task card.
 
 ## Build
 
