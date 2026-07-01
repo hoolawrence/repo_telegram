@@ -1,0 +1,69 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      workflow_api_base_url:
+        description: "Optional Tark workflow API base URL"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build review APK
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android packages
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;21.4.7075529" "cmake;3.22.1"
+
+      - name: Validate Telegram API credentials
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+        run: |
+          test -n "$TELEGRAM_API_ID"
+          test -n "$TELEGRAM_API_HASH"
+
+      - name: Create local.properties
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          WORKFLOW_API_BASE_URL: ${{ inputs.workflow_api_base_url }}
+        run: |
+          {
+            echo "sdk.dir=$ANDROID_HOME"
+            echo "TARK_API_ID=$TELEGRAM_API_ID"
+            echo "TARK_API_HASH=$TELEGRAM_API_HASH"
+            echo "TARK_WORKFLOW_API_BASE_URL=$WORKFLOW_API_BASE_URL"
+          } > local.properties
+
+      - name: Build APK
+        env:
+          GRADLE_USER_HOME: ${{ github.workspace }}/.gradle-user
+        run: ./gradlew :TMessagesProj_App:assembleDebug --no-daemon
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: tark-review-apk
+          path: TMessagesProj_App/build/outputs/apk/afat/debug/app.apk
+          if-no-files-found: error
+          retention-days: 14

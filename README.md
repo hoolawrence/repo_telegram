@@ -115,6 +115,20 @@ The debug APK is generated at:
 TMessagesProj_App/build/outputs/apk/afat/debug/app.apk
 ```
 
+## GitHub APK Build
+
+The repository includes `.github/workflows/android-apk.yml`.
+
+To build a login-capable APK from GitHub:
+
+1. Configure the `production` Environment in `repo_telegram`.
+2. Add Environment secrets `TELEGRAM_API_ID` and `TELEGRAM_API_HASH`.
+3. Open `Actions -> Android APK`.
+4. Run the workflow.
+5. Download the `tark-review-apk` artifact.
+
+Secrets configured in `tark-workflow-server` are not visible here; they must exist in `repo_telegram`.
+
 ## Important Branding Note
 
 Tark is not an official Telegram app. Do not use Telegram's official name, logo, production API credentials, Firebase configuration, or signing keys for a distributed Tark build.
